@@ -77,8 +77,6 @@ public @Data class Gift {
 		this.createdBy = createdBy;
 	}
 	
-	
-	
 	/**
 	 * Two Gifts will generate the same hashcode if they have exactly the same
 	 * values for their title and url.
