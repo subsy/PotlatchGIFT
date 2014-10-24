@@ -2,12 +2,10 @@ package com.newtonwilliamsdesign.potlatch.gift.repository;
 
 import java.util.List;
 
-import org.springframework.data.domain.Sort;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 import com.newtonwilliamsdesign.potlatch.gift.auth.User;
-import com.newtonwilliamsdesign.potlatch.gift.client.GiftSvcApi;
 
 /**
  * An interface for a repository that can store Gift

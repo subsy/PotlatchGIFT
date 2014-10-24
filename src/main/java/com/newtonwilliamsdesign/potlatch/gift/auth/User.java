@@ -9,20 +9,34 @@ package com.newtonwilliamsdesign.potlatch.gift.auth;
 import java.util.Collection;
 import java.util.Collections;
 
+import javax.persistence.Entity;
+import javax.persistence.Id;
+
+import lombok.Data;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 
-public class User implements UserDetails {
+@Entity (name = "USER")
+public @Data class User implements UserDetails {
+
+	private static final long serialVersionUID = -6042575951079215696L;
 
 	public static UserDetails create(String username, String password,
 			String...authorities) {
 		return new User(username, password, authorities);
 	}
 	
-	private final Collection<GrantedAuthority> authorities_;
-	private final String password_;
+	@Id
 	private final String username_;
+	private final String password_;
+	
+	private final Collection<GrantedAuthority> authorities_;
+	
+	private int touchedcnt;
+	private int touchUpdateFrequency;
+	private boolean viewFlagged;
 
 	@SuppressWarnings("unchecked")
 	private User(String username, String password) {

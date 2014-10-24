@@ -18,6 +18,11 @@ package com.newtonwilliamsdesign.potlatch.gift.client;
  */
 public class SecuredRestException extends RuntimeException {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
 	public SecuredRestException() {
 		super();
 	}

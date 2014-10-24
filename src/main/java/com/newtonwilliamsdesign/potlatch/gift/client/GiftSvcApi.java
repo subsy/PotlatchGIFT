@@ -134,6 +134,9 @@ public interface GiftSvcApi {
 	@GET(GIFT_SVC_PATH + "/chain")
 	public Collection<Gift> getGiftChainList();
 	
+	@GET(GIFT_SVC_PATH + "/top")
+	public Collection<Gift> getTopTenGiftGiversList();
+	
 	@GET(GIFT_SVC_PATH + "/{id}")
 	public Gift getGiftById(@Path("id") long id);
 	

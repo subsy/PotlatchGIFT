@@ -19,10 +19,10 @@ package com.newtonwilliamsdesign.potlatch.gift;
 
 import java.io.IOException;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,14 +33,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.google.common.collect.Lists;
+import com.newtonwilliamsdesign.potlatch.gift.auth.User;
 import com.newtonwilliamsdesign.potlatch.gift.client.GiftSvcApi;
 import com.newtonwilliamsdesign.potlatch.gift.repository.Gift;
 import com.newtonwilliamsdesign.potlatch.gift.repository.GiftRepository;
+import com.newtonwilliamsdesign.potlatch.gift.repository.UserRepository;
 
 @Controller
 public class GiftCtlr {
@@ -58,6 +56,9 @@ public class GiftCtlr {
 	//
 	@Autowired
 	private GiftRepository gifts;
+	
+	@Autowired
+	private UserRepository users;
 
 	// Receives POST requests to /gift and converts the HTTP
 	// request body, which should contain json, into a Gift
@@ -88,6 +89,12 @@ public class GiftCtlr {
 		return Lists.newArrayList(gifts.findAll());
 	}
 	
+	// Get List of Top Ten Gift Givers
+	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/top", method=RequestMethod.GET)
+	public @ResponseBody ArrayList<User> getTopTenGiftGiversList(){
+		return Lists.newArrayList(users.findTop10ByTouchedcntOrderByTouchedcntDesc());
+	}
+	
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}", method=RequestMethod.GET)
 	public @ResponseBody Gift getGiftById(@PathVariable long id,
 											HttpServletResponse response) throws IOException {
@@ -108,6 +115,8 @@ public class GiftCtlr {
 		} else {
 			Set<String> touched = g.getTouchesUsernames();
 			String username = p.getName();
+			User giftowner = users.findByUsername_(g.getCreatedBy());
+			int giftownerTouchedCount;
 			
 			if (touched.contains(username)) {
 				// already liked, return 400
@@ -119,6 +128,8 @@ public class GiftCtlr {
 				g.setTouchesUsernames(touched);
 				g.setTouches(++touchedNum);
 				gifts.save(g);
+				giftownerTouchedCount = giftowner.getTouchedcnt();
+				giftowner.setTouchedcnt(++giftownerTouchedCount);
 				response.setStatus(HttpServletResponse.SC_OK);
 			}
 		}
@@ -135,6 +146,8 @@ public class GiftCtlr {
 		} else {
 			Set<String> touched = g.getTouchesUsernames();
 			String username = p.getName();
+			User giftowner = users.findByUsername_(g.getCreatedBy());
+			int giftownerTouchedCount;
 			
 			if (touched.contains(username)) {
 				// perform unlike, return 200
@@ -143,6 +156,8 @@ public class GiftCtlr {
 				g.setTouchesUsernames(touched);
 				g.setTouches(--touchedNum);
 				gifts.save(g);
+				giftownerTouchedCount = giftowner.getTouchedcnt();
+				giftowner.setTouchedcnt(--giftownerTouchedCount);
 				response.setStatus(HttpServletResponse.SC_OK);
 			} else {
 				// user hasn't liked this video, return 400
