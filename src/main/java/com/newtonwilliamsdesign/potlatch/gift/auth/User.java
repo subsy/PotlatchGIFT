@@ -8,66 +8,68 @@ package com.newtonwilliamsdesign.potlatch.gift.auth;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-
-import lombok.Data;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.OneToMany;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.UserDetails;
 
-@Entity (name = "USER")
+import lombok.Data;
+
+import com.newtonwilliamsdesign.potlatch.gift.repository.Gift;
+
+@Entity(name = "USER")
 public @Data class User implements UserDetails {
-
-	private static final long serialVersionUID = -6042575951079215696L;
-
-	public static UserDetails create(String username, String password,
-			String...authorities) {
-		return new User(username, password, authorities);
-	}
 	
 	@Id
-	private final String username_;
-	private final String password_;
+	@GeneratedValue(strategy = GenerationType.AUTO)
+	private long id;
 	
-	private final Collection<GrantedAuthority> authorities_;
+	@Column(unique=true)
+	private String username;
+	private String password;
 	
-	private int touchedcnt;
-	private int touchUpdateFrequency;
-	private boolean viewFlagged;
+	@ElementCollection
+	private Collection<GrantedAuthority> authorities;
+	
+	private int touchedcount;
+	
+	@OneToMany(mappedBy = "createdby", cascade=CascadeType.ALL)
+	private Set<Gift> createdGifts = new HashSet<Gift>();
 
 	@SuppressWarnings("unchecked")
-	private User(String username, String password) {
+	public User(String username, String password) {
 		this(username, password, Collections.EMPTY_LIST);
 	}
 
-	private User(String username, String password,
+	public User(String username, String password,
 			String...authorities) {
-		username_ = username;
-		password_ = password;
-		authorities_ = AuthorityUtils.createAuthorityList(authorities);
+		this.username = username;
+		this.password = password;
+		this.authorities = AuthorityUtils.createAuthorityList(authorities);
 	}
 
-	private User(String username, String password,
+	public User(String username, String password,
 			Collection<GrantedAuthority> authorities) {
 		super();
-		username_ = username;
-		password_ = password;
-		authorities_ = authorities;
+		this.username = username;
+		this.password = password;
+		this.authorities = authorities;
 	}
-
-	public Collection<GrantedAuthority> getAuthorities() {
-		return authorities_;
-	}
-
-	public String getPassword() {
-		return password_;
-	}
-
-	public String getUsername() {
-		return username_;
+	
+	@Override
+	public Collection<? extends GrantedAuthority> getAuthorities() {
+		return authorities;
 	}
 
 	@Override

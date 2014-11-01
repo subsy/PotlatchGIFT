@@ -1,7 +1,5 @@
 package com.newtonwilliamsdesign.potlatch.gift.auth;
 
-import java.util.Arrays;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,7 +20,6 @@ import org.springframework.security.oauth2.config.annotation.web.configuration.E
 import org.springframework.security.oauth2.config.annotation.web.configuration.ResourceServerConfigurerAdapter;
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerEndpointsConfigurer;
 import org.springframework.security.oauth2.provider.ClientDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 
 /**
  *	Configure this web application to use OAuth 2.0.
@@ -116,9 +113,12 @@ public class OAuth2SecurityConfiguration {
 		// Delegate the processing of Authentication requests to the framework
 		@Autowired
 		private AuthenticationManager authenticationManager;
-
-		// A data structure used to store both a ClientDetailsService and a UserDetailsService
-		private ClientAndUserDetailsService combinedService_;
+		
+		@Autowired
+		private ClientDetailsService clientService_;
+		
+		@Autowired
+		private UserDetailsService userService_;
 
 		/**
 		 * 
@@ -140,26 +140,13 @@ public class OAuth2SecurityConfiguration {
 			
 			
 			// Create a service that has the credentials for all our clients
-			ClientDetailsService csvc = new InMemoryClientDetailsServiceBuilder()
+			clientService_ = new InMemoryClientDetailsServiceBuilder()
 					// Create a client that has "read" and "write" access to the
-			        // video service
+			        // gift service
 					.withClient("mobile").authorizedGrantTypes("password")
 					.authorities("ROLE_CLIENT", "ROLE_TRUSTED_CLIENT")
 					.scopes("read","write").resourceIds("gift")
 					.accessTokenValiditySeconds(3600).and().build();
-
-			// Create a series of hard-coded users. 
-			UserDetailsService svc = new InMemoryUserDetailsManager(
-					Arrays.asList(
-							User.create("ben", "password", "USER"),
-							User.create("user0", "password", "USER")));
-
-			// Since clients have to use BASIC authentication with the client's id/secret,
-			// when sending a request for a password grant, we make each client a user
-			// as well. When the BASIC authentication information is pulled from the
-			// request, this combined UserDetailsService will authenticate that the
-			// client is a valid "user". 
-			combinedService_ = new ClientAndUserDetailsService(csvc, svc);
 		}
 
 		/**
@@ -167,7 +154,7 @@ public class OAuth2SecurityConfiguration {
 		 */
 		@Bean
 		public ClientDetailsService clientDetailsService() throws Exception {
-			return combinedService_;
+			return clientService_;
 		}
 
 		/**
@@ -175,7 +162,7 @@ public class OAuth2SecurityConfiguration {
 		 */
 		@Bean
 		public UserDetailsService userDetailsService() {
-			return combinedService_;
+			return userService_;
 		}
 
 		/**

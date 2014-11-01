@@ -1,6 +1,7 @@
 package com.newtonwilliamsdesign.potlatch.gift;
 
 import java.io.File;
+
 import org.apache.catalina.connector.Connector;
 import org.apache.coyote.http11.Http11NioProtocol;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,13 +20,14 @@ import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import com.newtonwilliamsdesign.potlatch.gift.auth.OAuth2SecurityConfiguration;
 import com.newtonwilliamsdesign.potlatch.gift.repository.GiftRepository;
+import com.newtonwilliamsdesign.potlatch.gift.repository.UserRepository;
 
 //Tell Spring to automatically inject any dependencies that are marked in
 //our classes with @Autowired
 @EnableAutoConfiguration
 //Tell Spring to automatically create a JPA implementation of our
 //GiftRepository
-@EnableJpaRepositories(basePackageClasses = GiftRepository.class)
+@EnableJpaRepositories(basePackageClasses = {GiftRepository.class, UserRepository.class} )
 //Tell Spring to turn on WebMVC (e.g., it should enable the DispatcherServlet
 //so that requests can be routed to our Controllers)
 @EnableWebMvc

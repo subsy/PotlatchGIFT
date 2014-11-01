@@ -2,6 +2,7 @@ package com.newtonwilliamsdesign.potlatch.gift.client;
 
 import java.util.Collection;
 
+import com.newtonwilliamsdesign.potlatch.gift.auth.User;
 import com.newtonwilliamsdesign.potlatch.gift.repository.Gift;
 
 import retrofit.http.Body;
@@ -122,6 +123,9 @@ public interface GiftSvcApi {
 
 	public static final String TOKEN_PATH = "/oauth/token";
 
+	// The path where we expect the UserSvc to live
+	public static final String USER_SVC_PATH = "/user";
+	
 	// The path where we expect the VideoSvc to live
 	public static final String GIFT_SVC_PATH = "/gift";
 
@@ -142,6 +146,9 @@ public interface GiftSvcApi {
 	
 	@POST(GIFT_SVC_PATH)
 	public Gift addGift(@Body Gift v);
+	
+	@POST(GIFT_SVC_PATH)
+	public User addUser(@Body User u);
 	
 	@POST(GIFT_SVC_PATH + "/{id}/touch")
 	public Void touchGift(@Path("id") long id);

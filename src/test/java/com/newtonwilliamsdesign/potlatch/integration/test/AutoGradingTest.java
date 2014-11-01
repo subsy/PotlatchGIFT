@@ -14,6 +14,7 @@ import java.util.Set;
 import org.apache.http.HttpStatus;
 import org.junit.Test;
 
+import com.newtonwilliamsdesign.potlatch.gift.auth.User;
 import com.newtonwilliamsdesign.potlatch.gift.client.SecuredRestBuilder;
 import com.newtonwilliamsdesign.potlatch.gift.client.GiftSvcApi;
 import com.newtonwilliamsdesign.potlatch.gift.repository.Gift;
@@ -50,7 +51,7 @@ public class AutoGradingTest {
 	private final String TEST_URL = "https://localhost:8443";
 
 	private final String USERNAME1 = "ben";
-	private final String USERNAME2 = "user0";
+	private final String USERNAME2 = "ben";
 	private final String PASSWORD = "password";
 	private final String CLIENT_ID = "mobile";
 
@@ -70,7 +71,10 @@ public class AutoGradingTest {
 			.setUsername(USERNAME2).setPassword(PASSWORD).setClientId(CLIENT_ID)
 			.build().create(GiftSvcApi.class);
 
-	private Gift gift = TestData.randomGift();
+	private User ben = TestData.setupUser("ben");
+	private User jayne = TestData.setupUser("jayne");
+	
+	private Gift gift = TestData.randomGift(jayne);
 
 
 	@Rubric(value = "Video data is preserved", 
@@ -91,7 +95,7 @@ public class AutoGradingTest {
 		Gift received = readWriteGiftSvcUser1.addGift(gift);
 		assertEquals(gift.getTitle(), received.getTitle());
 		assertTrue(received.getTouches() == 0);
-		assertTrue(received.getGiftid() > 0);
+		assertTrue(received.getId() > 0);
 	}
 
 	@Rubric(value = "The list of videos is updated after an add", 
@@ -167,19 +171,19 @@ public class AutoGradingTest {
 		Gift v = readWriteGiftSvcUser1.addGift(gift);
 
 		// Like the video
-		readWriteGiftSvcUser1.touchGift(v.getGiftid());
+		readWriteGiftSvcUser1.touchGift(v.getId());
 
 		// Get the video again
-		v = readWriteGiftSvcUser1.getGiftById(v.getGiftid());
+		v = readWriteGiftSvcUser1.getGiftById(v.getId());
 
 		// Make sure the like count is 1
 		assertTrue(v.getTouches() == 1);
 
 		// Unlike the video
-		readWriteGiftSvcUser1.untouchGift(v.getGiftid());
+		readWriteGiftSvcUser1.untouchGift(v.getId());
 
 		// Get the video again
-		v = readWriteGiftSvcUser1.getGiftById(v.getGiftid());
+		v = readWriteGiftSvcUser1.getGiftById(v.getId());
 
 		// Make sure the like count is 0
 		assertTrue(v.getTouches() == 0);
@@ -202,26 +206,26 @@ public class AutoGradingTest {
 		Gift v = readWriteGiftSvcUser1.addGift(gift);
 
 		// Like the video
-		readWriteGiftSvcUser1.touchGift(v.getGiftid());
+		readWriteGiftSvcUser1.touchGift(v.getId());
 
-		Collection<String> touched = readWriteGiftSvcUser1.getUsersTouchedByGift(v.getGiftid());
+		Collection<String> touched = readWriteGiftSvcUser1.getUsersTouchedByGift(v.getId());
 
 		// Make sure we're on the list of people that like this video
 		assertTrue(touched.contains(USERNAME1));
 		
 		// Have the second user like the video
-		readWriteGiftSvcUser2.touchGift(v.getGiftid());
+		readWriteGiftSvcUser2.touchGift(v.getId());
 		
 		// Make sure both users show up in the like list
-		touched = readWriteGiftSvcUser1.getUsersTouchedByGift(v.getGiftid());
+		touched = readWriteGiftSvcUser1.getUsersTouchedByGift(v.getId());
 		assertTrue(touched.contains(USERNAME1));
 		assertTrue(touched.contains(USERNAME2));
 
 		// Unlike the video
-		readWriteGiftSvcUser1.untouchGift(v.getGiftid());
+		readWriteGiftSvcUser1.untouchGift(v.getId());
 
 		// Get the video again
-		touched = readWriteGiftSvcUser1.getUsersTouchedByGift(v.getGiftid());
+		touched = readWriteGiftSvcUser1.getUsersTouchedByGift(v.getId());
 
 		// Make sure user1 is not on the list of people that liked this video
 		assertTrue(!touched.contains(USERNAME1));
@@ -247,17 +251,17 @@ public class AutoGradingTest {
 		Gift v = readWriteGiftSvcUser1.addGift(gift);
 
 		// Like the video
-		readWriteGiftSvcUser1.touchGift(v.getGiftid());
+		readWriteGiftSvcUser1.touchGift(v.getId());
 
 		// Get the video again
-		v = readWriteGiftSvcUser1.getGiftById(v.getGiftid());
+		v = readWriteGiftSvcUser1.getGiftById(v.getId());
 
 		// Make sure the like count is 1
 		assertTrue(v.getTouches() == 1);
 
 		try {
 			// Like the video again.
-			readWriteGiftSvcUser1.touchGift(v.getGiftid());
+			readWriteGiftSvcUser1.touchGift(v.getId());
 
 			fail("The server let us like a video twice without returning a 400");
 		} catch (RetrofitError e) {
@@ -266,7 +270,7 @@ public class AutoGradingTest {
 		}
 
 		// Get the video again
-		v = readWriteGiftSvcUser1.getGiftById(v.getGiftid());
+		v = readWriteGiftSvcUser1.getGiftById(v.getId());
 
 		// Make sure the like count is still 1
 		assertTrue(v.getTouches() == 1);
@@ -316,10 +320,13 @@ public class AutoGradingTest {
 		ArrayList<Gift> gifts = new ArrayList<Gift>();
 
 		for (int i = 0; i < names.length; ++i) {
-			gifts.add(TestData.randomGift());
+			gifts.add(TestData.randomGift(ben));
 			gifts.get(i).setTitle(names[i]);
 		}
 
+		readWriteGiftSvcUser1.addUser(ben);
+		readWriteGiftSvcUser1.addUser(jayne);
+		
 		// Add all the videos to the server
 		for (Gift v : gifts){
 			readWriteGiftSvcUser1.addGift(v);
@@ -333,13 +340,14 @@ public class AutoGradingTest {
 		for (Gift v : searchResults) {
 			assertTrue(v.getTitle().equals(names[0]));
 		}
+		
 	}
 
 	private long getInvalidGiftId() {
 		Set<Long> ids = new HashSet<Long>();
 		Collection<Gift> stored = readWriteGiftSvcUser1.getGiftList();
 		for (Gift v : stored) {
-			ids.add(v.getGiftid());
+			ids.add(v.getId());
 		}
 
 		long nonExistantId = Long.MIN_VALUE;

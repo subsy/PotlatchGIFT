@@ -33,6 +33,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+
 import com.google.common.collect.Lists;
 import com.newtonwilliamsdesign.potlatch.gift.auth.User;
 import com.newtonwilliamsdesign.potlatch.gift.client.GiftSvcApi;
@@ -42,7 +43,6 @@ import com.newtonwilliamsdesign.potlatch.gift.repository.UserRepository;
 
 @Controller
 public class GiftCtlr {
-	
 	
 	// The GiftRepository that we are going to store our Gifts
 	// in. We don't explicitly construct a GiftRepository, but
@@ -58,7 +58,7 @@ public class GiftCtlr {
 	private GiftRepository gifts;
 	
 	@Autowired
-	private UserRepository users;
+	private UserRepository usrs;
 
 	// Receives POST requests to /gift and converts the HTTP
 	// request body, which should contain json, into a Gift
@@ -75,6 +75,12 @@ public class GiftCtlr {
 	// client and service paths for the GiftSvc are always
 	// in synch.
 	//
+	
+	@RequestMapping(value = GiftSvcApi.USER_SVC_PATH, method = RequestMethod.POST)
+	public @ResponseBody User addUser(@RequestBody User u) {
+		return usrs.save(u);
+	}
+	
 	@RequestMapping(value = GiftSvcApi.GIFT_SVC_PATH, method = RequestMethod.POST)
 	public @ResponseBody Gift addGift(@RequestBody Gift v) {
 		return gifts.save(v);
@@ -89,10 +95,16 @@ public class GiftCtlr {
 		return Lists.newArrayList(gifts.findAll());
 	}
 	
+	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/chain", method=RequestMethod.GET)
+	public @ResponseBody Collection<Gift> getGiftChainList(){
+		return Lists.newArrayList(gifts.findAll());
+	}
+	
 	// Get List of Top Ten Gift Givers
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/top", method=RequestMethod.GET)
 	public @ResponseBody ArrayList<User> getTopTenGiftGiversList(){
-		return Lists.newArrayList(users.findTop10ByTouchedcntOrderByTouchedcntDesc());
+		//return Lists.newArrayList(usrs.findTop10ByTouchedcount());
+		return new ArrayList<User>();
 	}
 	
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}", method=RequestMethod.GET)
@@ -115,7 +127,7 @@ public class GiftCtlr {
 		} else {
 			Set<String> touched = g.getTouchesUsernames();
 			String username = p.getName();
-			User giftowner = users.findByUsername_(g.getCreatedBy());
+			User giftowner = usrs.findByUsername(g.getCreatedby().getUsername());
 			int giftownerTouchedCount;
 			
 			if (touched.contains(username)) {
@@ -127,9 +139,10 @@ public class GiftCtlr {
 				touched.add(username);
 				g.setTouchesUsernames(touched);
 				g.setTouches(++touchedNum);
-				gifts.save(g);
-				giftownerTouchedCount = giftowner.getTouchedcnt();
-				giftowner.setTouchedcnt(++giftownerTouchedCount);
+				//gifts.save(g);
+				giftownerTouchedCount = giftowner.getTouchedcount();
+				giftowner.setTouchedcount(++giftownerTouchedCount);
+				usrs.save(giftowner);
 				response.setStatus(HttpServletResponse.SC_OK);
 			}
 		}
@@ -146,7 +159,7 @@ public class GiftCtlr {
 		} else {
 			Set<String> touched = g.getTouchesUsernames();
 			String username = p.getName();
-			User giftowner = users.findByUsername_(g.getCreatedBy());
+			User giftowner = usrs.findByUsername(g.getCreatedby().getUsername());
 			int giftownerTouchedCount;
 			
 			if (touched.contains(username)) {
@@ -155,9 +168,10 @@ public class GiftCtlr {
 				touched.remove(username);
 				g.setTouchesUsernames(touched);
 				g.setTouches(--touchedNum);
-				gifts.save(g);
-				giftownerTouchedCount = giftowner.getTouchedcnt();
-				giftowner.setTouchedcnt(--giftownerTouchedCount);
+				//gifts.save(g);
+				giftownerTouchedCount = giftowner.getTouchedcount();
+				giftowner.setTouchedcount(--giftownerTouchedCount);
+				usrs.save(giftowner);
 				response.setStatus(HttpServletResponse.SC_OK);
 			} else {
 				// user hasn't liked this video, return 400

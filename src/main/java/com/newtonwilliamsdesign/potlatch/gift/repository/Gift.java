@@ -4,13 +4,16 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.google.common.base.Objects;
+import com.newtonwilliamsdesign.potlatch.gift.auth.User;
 
-import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+
 import lombok.Data;
 
 /**
@@ -21,19 +24,22 @@ public @Data class Gift {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
-	@Column(name = "GIFT_ID")
-	private long giftid;
+	private long id;
 	
 	private long parentid;
-	private String createdBy;
+	
+	@ManyToOne
+	@JoinColumn(name="USER_ID")
+	private User createdby;
+	
 	private String title;
 	private String description;
 	private String url;
 	private String imageurl;
 	private long flags;
 	private long touches;
-	private long createdOn;
-	private long modifiedOn;
+	private long createdon;
+	private long modifiedon;
 	
 	@ElementCollection
 	private Set<String> touchesUsernames = new HashSet<String>(); 
@@ -50,12 +56,11 @@ public @Data class Gift {
 		this.imageurl = "";
 		this.flags = 0;
 		this.touches = 0;
-		this.createdOn = currTime;
-		this.modifiedOn = currTime;
-		this.createdBy = "";
+		this.createdon = currTime;
+		this.modifiedon = currTime;;
 	}
 
-	public Gift(long parentid, String title, String description, String url, String imageurl, long flags, long touches, long created, long modified, String createdBy) {
+	public Gift(long parentid, String title, String description, String url, String imageurl, long flags, long touches, long created, long modified, User createdby) {
 		super();
 		this.parentid = parentid;
 		this.title = title;
@@ -64,9 +69,9 @@ public @Data class Gift {
 		this.imageurl = imageurl;
 		this.flags = flags;
 		this.touches = touches;
-		this.createdOn = created;
-		this.modifiedOn = modified;
-		this.createdBy = createdBy;
+		this.createdon = created;
+		this.modifiedon = modified;
+		this.createdby = createdby;
 	}
 	
 	/**

@@ -1,8 +1,14 @@
 package com.newtonwilliamsdesign.potlatch.testdata;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.newtonwilliamsdesign.potlatch.gift.auth.User;
 import com.newtonwilliamsdesign.potlatch.gift.repository.Gift;
 
 /**
@@ -20,24 +26,34 @@ public class TestData {
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 	
+	public static User setupUser(String username) {
+	
+		List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
+		authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+	
+		User createdBy = new User(username, "password", authorities);
+		
+		return createdBy;
+	}
+	
 	/**
 	 * Construct and return a Gift object with a
 	 * random title and url
 	 * 
 	 * @return
 	 */
-	public static Gift randomGift() {
+	public static Gift randomGift(User user) {
 		// Information about the video
 		// Construct a random identifier using Java's UUID class
 		String id = UUID.randomUUID().toString();
 		long parentid = 0;
 		String title = "Gift-"+id;
 		String description = "This is a dummy description";
-		String url = "http://coursera.org/some/gift-"+id;
-		String imageurl = "http://coursera.org/some/gift-" + id + "/image";
-		String createdBy = "ben";
+		String url = "https://sle.pt/gift/"+id;
+		String imageurl = "https://sle.pt/gift/" + id + "/image";
 		long currTime = System.currentTimeMillis();
-		return new Gift(parentid, title, description, url, imageurl, 0, 0, currTime, currTime, createdBy);
+		
+		return new Gift(parentid, title, description, url, imageurl, 0, 0, currTime, currTime, user);
 	}
 	
 	/**

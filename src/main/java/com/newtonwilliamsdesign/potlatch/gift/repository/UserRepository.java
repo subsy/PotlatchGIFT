@@ -8,15 +8,15 @@ import org.springframework.stereotype.Repository;
 import com.newtonwilliamsdesign.potlatch.gift.auth.User;
 
 /**
- * An interface for a repository that can store Gift
- * objects and allow them to be searched by title.
+ * An interface for a repository that can store User
+ * objects and allow them to be searched by username.
  */
 @Repository
 public interface UserRepository extends CrudRepository<User, Long>{
 	
 	// Find User with a matching username (e.g., User.username)
-	public User findByUsername_(String username);
+	public User findByUsername(String username);
 	
 	// Get list of users with highest TouchedCounts
-	public List<User> findTop10ByTouchedcntOrderByTouchedcntDesc();
+	//public List<User> findTop10ByTouchedcount();
 }
