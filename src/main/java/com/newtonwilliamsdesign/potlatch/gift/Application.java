@@ -1,14 +1,19 @@
 package com.newtonwilliamsdesign.potlatch.gift;
 
 import java.io.File;
+import java.io.IOException;
+
+import javax.servlet.MultipartConfigElement;
 
 import org.apache.catalina.connector.Connector;
 import org.apache.coyote.http11.Http11NioProtocol;
+import com.newtonwilliamsdesign.potlatch.gift.GiftFileManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.context.embedded.ConfigurableEmbeddedServletContainer;
 import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomizer;
+import org.springframework.boot.context.embedded.MultipartConfigFactory;
 import org.springframework.boot.context.embedded.tomcat.TomcatConnectorCustomizer;
 import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainerFactory;
 import org.springframework.context.annotation.Bean;
@@ -18,7 +23,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
-import com.newtonwilliamsdesign.potlatch.gift.auth.OAuth2SecurityConfiguration;
+import com.newtonwilliamsdesign.potlatch.gift.config.MethodSecurityConfig;
+import com.newtonwilliamsdesign.potlatch.gift.config.OAuth2ServerConfig;
+import com.newtonwilliamsdesign.potlatch.gift.config.SecurityConfiguration;
 import com.newtonwilliamsdesign.potlatch.gift.repository.GiftRepository;
 import com.newtonwilliamsdesign.potlatch.gift.repository.UserRepository;
 
@@ -38,12 +45,14 @@ import com.newtonwilliamsdesign.potlatch.gift.repository.UserRepository;
 // find any Controllers or other components that are part of our applciation.
 // Any class in this package that is annotated with @Controller is going to be
 // automatically discovered and connected to the DispatcherServlet.
-@ComponentScan
+@ComponentScan(basePackages = "com.newtonwilliamsdesign.potlatch.gift.mvc")
 //We use the @Import annotation to include our OAuth2SecurityConfiguration
 //as part of this configuration so that we can have security and oauth
 //setup by Spring
-@Import(OAuth2SecurityConfiguration.class)
+@Import({SecurityConfiguration.class, OAuth2ServerConfig.class})
 public class Application {
+	
+	private static final String MAX_REQUEST_SIZE = "4MB";
 	
 	 // This version uses the Tomcat web container and configures it to
 		// support HTTPS. The code below performs the configuration of Tomcat
@@ -103,10 +112,30 @@ public class Application {
 			}
         };
     }
+	
+	// This configuration element adds the ability to accept multipart
+		// requests to the web container.
+		@Bean
+	    public MultipartConfigElement multipartConfigElement() {
+			// Setup the application container to be accept multipart requests
+			final MultipartConfigFactory factory = new MultipartConfigFactory();
+			// Place upper bounds on the size of the requests to ensure that
+			// clients don't abuse the web container by sending huge requests
+			factory.setMaxFileSize(MAX_REQUEST_SIZE);
+			factory.setMaxRequestSize(MAX_REQUEST_SIZE);
 
-	// Tell Spring to launch our app!
-	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
-	}
+			// Return the configuration to setup multipart in the container
+			return factory.createMultipartConfig();
+		}
+		
+		@Bean
+		public GiftFileManager giftFileManager() throws IOException {
+		    return GiftFileManager.get();
+		}
+		
+		// Tell Spring to launch our app!
+		public static void main(String[] args) {
+			SpringApplication.run(Application.class, args);
+		}
 	
 }

@@ -14,10 +14,10 @@ import java.util.Set;
 import org.apache.http.HttpStatus;
 import org.junit.Test;
 
-import com.newtonwilliamsdesign.potlatch.gift.auth.User;
 import com.newtonwilliamsdesign.potlatch.gift.client.SecuredRestBuilder;
 import com.newtonwilliamsdesign.potlatch.gift.client.GiftSvcApi;
-import com.newtonwilliamsdesign.potlatch.gift.repository.Gift;
+import com.newtonwilliamsdesign.potlatch.gift.domain.Gift;
+import com.newtonwilliamsdesign.potlatch.gift.domain.GiftServiceUser;
 import com.newtonwilliamsdesign.potlatch.testdata.TestData;
 
 import retrofit.ErrorHandler;
@@ -71,8 +71,8 @@ public class AutoGradingTest {
 			.setUsername(USERNAME2).setPassword(PASSWORD).setClientId(CLIENT_ID)
 			.build().create(GiftSvcApi.class);
 
-	private User ben = TestData.setupUser("ben");
-	private User jayne = TestData.setupUser("jayne");
+	private GiftServiceUser ben = TestData.setupUser("ben");
+	private GiftServiceUser jayne = TestData.setupUser("jayne");
 	
 	private Gift gift = TestData.randomGift(jayne);
 

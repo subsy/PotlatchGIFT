@@ -7,6 +7,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.newtonwilliamsdesign.potlatch.gift.client.GiftSvcApi;
+import com.newtonwilliamsdesign.potlatch.gift.domain.Gift;
 
 /**
  * An interface for a repository that can store Gift

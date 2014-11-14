@@ -1,10 +1,9 @@
-package com.newtonwilliamsdesign.potlatch.gift.repository;
+package com.newtonwilliamsdesign.potlatch.gift.domain;
 
 import java.util.HashSet;
 import java.util.Set;
 
 import com.google.common.base.Objects;
-import com.newtonwilliamsdesign.potlatch.gift.auth.User;
 
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
@@ -30,12 +29,13 @@ public @Data class Gift {
 	
 	@ManyToOne
 	@JoinColumn(name="USER_ID")
-	private User createdby;
+	private GiftServiceUser createdby;
 	
 	private String title;
 	private String description;
 	private String url;
 	private String imageurl;
+	private String thumburl;
 	private long flags;
 	private long touches;
 	private long createdon;
@@ -54,19 +54,21 @@ public @Data class Gift {
 		this.description = "Description";
 		this.url = "";
 		this.imageurl = "";
+		this.thumburl = "";
 		this.flags = 0;
 		this.touches = 0;
 		this.createdon = currTime;
 		this.modifiedon = currTime;;
 	}
 
-	public Gift(long parentid, String title, String description, String url, String imageurl, long flags, long touches, long created, long modified, User createdby) {
+	public Gift(long parentid, String title, String description, String url, String imageurl, String thumburl, long flags, long touches, long created, long modified, GiftServiceUser createdby) {
 		super();
 		this.parentid = parentid;
 		this.title = title;
 		this.description = description;
 		this.url = url;
 		this.imageurl = imageurl;
+		this.thumburl = thumburl;
 		this.flags = flags;
 		this.touches = touches;
 		this.createdon = created;

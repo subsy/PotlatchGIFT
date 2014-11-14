@@ -4,7 +4,7 @@
  **
  ** 
  */
-package com.newtonwilliamsdesign.potlatch.gift.auth;
+package com.newtonwilliamsdesign.potlatch.gift.domain;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -26,11 +26,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import lombok.Data;
 
-import com.newtonwilliamsdesign.potlatch.gift.repository.Gift;
-
 @Entity(name = "USER")
-public @Data class User implements UserDetails {
+public @Data class GiftServiceUser implements UserDetails {
 	
+	private static final long serialVersionUID = 1695573475642429512L;
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	private long id;
@@ -38,6 +38,7 @@ public @Data class User implements UserDetails {
 	@Column(unique=true)
 	private String username;
 	private String password;
+	private String name;
 	
 	@ElementCollection
 	private Collection<GrantedAuthority> authorities;
@@ -48,18 +49,18 @@ public @Data class User implements UserDetails {
 	private Set<Gift> createdGifts = new HashSet<Gift>();
 
 	@SuppressWarnings("unchecked")
-	public User(String username, String password) {
+	public GiftServiceUser(String username, String password) {
 		this(username, password, Collections.EMPTY_LIST);
 	}
 
-	public User(String username, String password,
+	public GiftServiceUser(String username, String password,
 			String...authorities) {
 		this.username = username;
 		this.password = password;
 		this.authorities = AuthorityUtils.createAuthorityList(authorities);
 	}
 
-	public User(String username, String password,
+	public GiftServiceUser(String username, String password,
 			Collection<GrantedAuthority> authorities) {
 		super();
 		this.username = username;

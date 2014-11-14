@@ -66,6 +66,8 @@ dependencies {
     compile(":mobilecloud.handin:1.0.0")
     compile(":video.like.test:1.0.0")
     
+    compile("org.imgscalr:imgscalr-lib:4.2")
+    
     testCompile("junit:junit")
 }
 

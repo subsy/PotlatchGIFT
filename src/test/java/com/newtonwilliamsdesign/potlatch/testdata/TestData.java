@@ -8,8 +8,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.newtonwilliamsdesign.potlatch.gift.auth.User;
-import com.newtonwilliamsdesign.potlatch.gift.repository.Gift;
+import com.newtonwilliamsdesign.potlatch.gift.domain.Gift;
+import com.newtonwilliamsdesign.potlatch.gift.domain.GiftServiceUser;
 
 /**
  * This is a utility class to aid in the construction of
@@ -26,12 +26,12 @@ public class TestData {
 
 	private static final ObjectMapper objectMapper = new ObjectMapper();
 	
-	public static User setupUser(String username) {
+	public static GiftServiceUser setupUser(String username) {
 	
 		List<GrantedAuthority> authorities = new ArrayList<GrantedAuthority>();
 		authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
 	
-		User createdBy = new User(username, "password", authorities);
+		GiftServiceUser createdBy = new GiftServiceUser(username, "password", authorities);
 		
 		return createdBy;
 	}
@@ -42,7 +42,7 @@ public class TestData {
 	 * 
 	 * @return
 	 */
-	public static Gift randomGift(User user) {
+	public static Gift randomGift(GiftServiceUser user) {
 		// Information about the video
 		// Construct a random identifier using Java's UUID class
 		String id = UUID.randomUUID().toString();

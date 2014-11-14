@@ -15,7 +15,7 @@
  * 
  */
 
-package com.newtonwilliamsdesign.potlatch.gift;
+package com.newtonwilliamsdesign.potlatch.gift.mvc;
 
 import java.io.IOException;
 import java.security.Principal;
@@ -23,26 +23,32 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.google.common.collect.Lists;
-import com.newtonwilliamsdesign.potlatch.gift.auth.User;
+import com.newtonwilliamsdesign.potlatch.gift.GiftFileManager;
 import com.newtonwilliamsdesign.potlatch.gift.client.GiftSvcApi;
-import com.newtonwilliamsdesign.potlatch.gift.repository.Gift;
+import com.newtonwilliamsdesign.potlatch.gift.domain.Gift;
+import com.newtonwilliamsdesign.potlatch.gift.domain.GiftServiceUser;
+import com.newtonwilliamsdesign.potlatch.gift.domain.GiftStatus;
+import com.newtonwilliamsdesign.potlatch.gift.domain.GiftStatus.GiftState;
 import com.newtonwilliamsdesign.potlatch.gift.repository.GiftRepository;
 import com.newtonwilliamsdesign.potlatch.gift.repository.UserRepository;
 
-@Controller
-public class GiftCtlr {
+@RestController
+public class GiftController {
 	
 	// The GiftRepository that we are going to store our Gifts
 	// in. We don't explicitly construct a GiftRepository, but
@@ -59,6 +65,29 @@ public class GiftCtlr {
 	
 	@Autowired
 	private UserRepository usrs;
+	
+	@Autowired
+	private GiftFileManager giftDataMgr;
+
+	private String getImageUrl(long giftId) {
+		String url = getUrlBaseForLocalServer() + "/gift/" + giftId + "/image";
+		return url;
+	}
+	
+	private String getThumbUrl(long giftId) {
+		String url = getUrlBaseForLocalServer() + "/gift/" + giftId + "/image";
+		return url;
+	}
+
+	private String getUrlBaseForLocalServer() {
+		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+		String base = "https://" + request.getServerName() + ((request.getServerPort() != 80) ? ":" + request.getServerPort() : "");
+		return base;
+	}
+
+	public void saveGift(Gift g, MultipartFile giftData) throws IOException {
+		giftDataMgr.saveGiftData(g, giftData.getInputStream());
+	}
 
 	// Receives POST requests to /gift and converts the HTTP
 	// request body, which should contain json, into a Gift
@@ -75,15 +104,27 @@ public class GiftCtlr {
 	// client and service paths for the GiftSvc are always
 	// in synch.
 	//
-	
-	@RequestMapping(value = GiftSvcApi.USER_SVC_PATH, method = RequestMethod.POST)
-	public @ResponseBody User addUser(@RequestBody User u) {
-		return usrs.save(u);
+
+	@RequestMapping(value = GiftSvcApi.GIFT_SVC_PATH, method = RequestMethod.POST)
+	public Gift addGift(@RequestBody Gift g) {
+		Gift savedGift = gifts.save(g);
+		savedGift.setImageurl(getImageUrl(savedGift.getId()));
+		savedGift.setThumburl(getThumbUrl(savedGift.getId()));
+		return gifts.save(savedGift);
 	}
 	
-	@RequestMapping(value = GiftSvcApi.GIFT_SVC_PATH, method = RequestMethod.POST)
-	public @ResponseBody Gift addGift(@RequestBody Gift v) {
-		return gifts.save(v);
+	@RequestMapping(value = GiftSvcApi.GIFT_IMG_PATH, method = RequestMethod.POST)
+	public GiftStatus setGiftData(
+			@PathVariable(GiftSvcApi.ID_PARAMETER) long id,
+			@RequestParam(GiftSvcApi.DATA_PARAMETER) MultipartFile giftData,
+			HttpServletResponse response) throws IOException {
+		// if id != null save the gift data
+		if (null == gifts.findOne(id)) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+		} else {
+			saveGift(gifts.findOne(id), giftData);
+		}
+		return new GiftStatus(GiftState.READY);
 	}
 	
 	// Receives GET requests to /video and returns the current
@@ -91,24 +132,25 @@ public class GiftCtlr {
 	// the list of videos to JSON because of the @ResponseBody
 	// annotation.
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH, method=RequestMethod.GET)
-	public @ResponseBody Collection<Gift> getGiftList(){
+	public Collection<Gift> getGiftList(){
 		return Lists.newArrayList(gifts.findAll());
 	}
 	
+	// Gift Chain List is a list of Gifts where parentId = 0
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/chain", method=RequestMethod.GET)
-	public @ResponseBody Collection<Gift> getGiftChainList(){
+	public Collection<Gift> getGiftChainList(){
 		return Lists.newArrayList(gifts.findAll());
 	}
 	
 	// Get List of Top Ten Gift Givers
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/top", method=RequestMethod.GET)
-	public @ResponseBody ArrayList<User> getTopTenGiftGiversList(){
+	public ArrayList<GiftServiceUser> getTopTenGiftGiversList(){
 		//return Lists.newArrayList(usrs.findTop10ByTouchedcount());
-		return new ArrayList<User>();
+		return new ArrayList<GiftServiceUser>();
 	}
 	
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}", method=RequestMethod.GET)
-	public @ResponseBody Gift getGiftById(@PathVariable long id,
+	public Gift getGiftById(@PathVariable long id,
 											HttpServletResponse response) throws IOException {
 		if (null == gifts.findOne(id)) {
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -117,7 +159,7 @@ public class GiftCtlr {
 	}
 	
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/touch", method=RequestMethod.POST)
-	public @ResponseBody void touchVideo(@PathVariable long id, 
+	public Boolean touchVideo(@PathVariable long id, 
 										Principal p, 
 										HttpServletResponse response) throws IOException {
 		Gift g = gifts.findOne(id);
@@ -127,7 +169,7 @@ public class GiftCtlr {
 		} else {
 			Set<String> touched = g.getTouchesUsernames();
 			String username = p.getName();
-			User giftowner = usrs.findByUsername(g.getCreatedby().getUsername());
+			GiftServiceUser giftowner = usrs.findByUsername(g.getCreatedby().getUsername());
 			int giftownerTouchedCount;
 			
 			if (touched.contains(username)) {
@@ -144,12 +186,14 @@ public class GiftCtlr {
 				giftowner.setTouchedcount(++giftownerTouchedCount);
 				usrs.save(giftowner);
 				response.setStatus(HttpServletResponse.SC_OK);
+				return true;
 			}
 		}
+		return false;
 	}
 	
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/untouch", method=RequestMethod.POST)
-	public @ResponseBody void untouchVideo(@PathVariable long id, 
+	public Boolean untouchVideo(@PathVariable long id, 
 										  Principal p, 
 										  HttpServletResponse response) throws IOException {
 		Gift g = gifts.findOne(id);
@@ -159,7 +203,7 @@ public class GiftCtlr {
 		} else {
 			Set<String> touched = g.getTouchesUsernames();
 			String username = p.getName();
-			User giftowner = usrs.findByUsername(g.getCreatedby().getUsername());
+			GiftServiceUser giftowner = usrs.findByUsername(g.getCreatedby().getUsername());
 			int giftownerTouchedCount;
 			
 			if (touched.contains(username)) {
@@ -173,17 +217,19 @@ public class GiftCtlr {
 				giftowner.setTouchedcount(--giftownerTouchedCount);
 				usrs.save(giftowner);
 				response.setStatus(HttpServletResponse.SC_OK);
+				return true;
 			} else {
 				// user hasn't liked this video, return 400
 				
 				response.sendError(HttpServletResponse.SC_BAD_REQUEST);
 			}
 		}
+		return false;
 			
 	}
 	
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/touched", method=RequestMethod.GET)
-	public @ResponseBody Collection<String> getUsersTouchedByGift(@PathVariable long id,
+	public Collection<String> getUsersTouchedByGift(@PathVariable long id,
 																  HttpServletResponse response) throws IOException {
 		if (null == gifts.findOne(id)) {
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -193,7 +239,7 @@ public class GiftCtlr {
 	}
 	
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/flag", method=RequestMethod.POST)
-	public @ResponseBody void flagVideo(@PathVariable long id, 
+	public Boolean flagVideo(@PathVariable long id, 
 										Principal p, 
 										HttpServletResponse response) throws IOException {
 		Gift g = gifts.findOne(id);
@@ -215,12 +261,14 @@ public class GiftCtlr {
 				g.setFlags(++flaggedNum);
 				gifts.save(g);
 				response.setStatus(HttpServletResponse.SC_OK);
+				return true;
 			}
 		}
+		return false;
 	}
 	
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/unflag", method=RequestMethod.POST)
-	public @ResponseBody void unflagVideo(@PathVariable long id, 
+	public Boolean unflagVideo(@PathVariable long id, 
 										  Principal p, 
 										  HttpServletResponse response) throws IOException {
 		Gift g = gifts.findOne(id);
@@ -239,17 +287,19 @@ public class GiftCtlr {
 				g.setFlags(--flaggedNum);
 				gifts.save(g);
 				response.setStatus(HttpServletResponse.SC_OK);
+				return true;
 			} else {
 				// user hasn't liked this video, return 400
 				
 				response.sendError(HttpServletResponse.SC_BAD_REQUEST);
 			}
 		}
+		return false;
 			
 	}
 	
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/flaggedBy", method=RequestMethod.GET)
-	public @ResponseBody Collection<String> getUsersWhoFlaggedGift(@PathVariable long id,
+	public Collection<String> getUsersWhoFlaggedGift(@PathVariable long id,
 																  HttpServletResponse response) throws IOException {
 		if (null == gifts.findOne(id)) {
 			response.sendError(HttpServletResponse.SC_NOT_FOUND);
@@ -262,7 +312,7 @@ public class GiftCtlr {
 	// that have a title (e.g., Video.name) matching the "title" request
 	// parameter value that is passed by the client
 	@RequestMapping(value=GiftSvcApi.GIFT_TITLE_SEARCH_PATH, method=RequestMethod.GET)
-	public @ResponseBody Collection<Gift> findByTitle(
+	public Collection<Gift> findByTitle(
 			// Tell Spring to use the "title" parameter in the HTTP request's query
 			// string as the value for the title method parameter
 			@RequestParam(GiftSvcApi.TITLE_PARAMETER) String title

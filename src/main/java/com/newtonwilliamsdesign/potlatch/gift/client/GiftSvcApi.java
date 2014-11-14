@@ -1,15 +1,20 @@
 package com.newtonwilliamsdesign.potlatch.gift.client;
 
+import java.security.Principal;
 import java.util.Collection;
 
-import com.newtonwilliamsdesign.potlatch.gift.auth.User;
-import com.newtonwilliamsdesign.potlatch.gift.repository.Gift;
+import com.newtonwilliamsdesign.potlatch.gift.domain.GiftStatus;
+import com.newtonwilliamsdesign.potlatch.gift.domain.Gift;
+import com.newtonwilliamsdesign.potlatch.gift.domain.GiftServiceUser;
 
 import retrofit.http.Body;
 import retrofit.http.GET;
+import retrofit.http.Multipart;
 import retrofit.http.POST;
+import retrofit.http.Part;
 import retrofit.http.Path;
 import retrofit.http.Query;
+import retrofit.mime.TypedFile;
 
 /**
  * /**
@@ -122,12 +127,22 @@ public interface GiftSvcApi {
 	public static final String TITLE_PARAMETER = "title";
 
 	public static final String TOKEN_PATH = "/oauth/token";
+	
+	public static final String DATA_PARAMETER = "image";
+
+	public static final String ID_PARAMETER = "id";
 
 	// The path where we expect the UserSvc to live
-	public static final String USER_SVC_PATH = "/user";
+	public static final String USER_SVC_PATH = "/me";
 	
 	// The path where we expect the VideoSvc to live
 	public static final String GIFT_SVC_PATH = "/gift";
+	
+	// The path for the Gift (image) data
+	public static final String GIFT_IMG_PATH = GIFT_SVC_PATH + "/{id}/image";
+	
+	// The path for the Gift (image) thumbnail data
+	public static final String GIFT_THUMB_PATH = GIFT_SVC_PATH + "/{id}/thumb";
 
 	// The path to search videos by title
 	public static final String GIFT_TITLE_SEARCH_PATH = GIFT_SVC_PATH + "/search/findByTitle";
@@ -142,13 +157,20 @@ public interface GiftSvcApi {
 	public Collection<Gift> getTopTenGiftGiversList();
 	
 	@GET(GIFT_SVC_PATH + "/{id}")
-	public Gift getGiftById(@Path("id") long id);
+	public Gift getGiftById(@Path(ID_PARAMETER) long id);
 	
 	@POST(GIFT_SVC_PATH)
 	public Gift addGift(@Body Gift v);
 	
-	@POST(GIFT_SVC_PATH)
-	public User addUser(@Body User u);
+	@Multipart
+	@POST(GIFT_IMG_PATH)
+	public GiftStatus setGiftData(@Path(ID_PARAMETER) long id, @Part(DATA_PARAMETER) TypedFile giftData);
+	
+	@POST(USER_SVC_PATH)
+	public GiftServiceUser addUser(@Body GiftServiceUser u);
+	
+	@GET(USER_SVC_PATH)
+	public GiftServiceUser getGiftServiceUser(@Body Principal p);
 	
 	@POST(GIFT_SVC_PATH + "/{id}/touch")
 	public Void touchGift(@Path("id") long id);
@@ -166,8 +188,8 @@ public interface GiftSvcApi {
 	public Collection<Gift> findByTitle(@Query(TITLE_PARAMETER) String title);
 	
 	@GET(GIFT_SVC_PATH + "/{id}/touched")
-	public Collection<String> getUsersTouchedByGift(@Path("id") long id);
+	public Collection<String> getUsersTouchedByGift(@Path(ID_PARAMETER) long id);
 	
 	@GET(GIFT_SVC_PATH + "/{id}/flaggedBy")
-	public Collection<String> getUsersWhoFlaggedGift(@Path("id") long id);
+	public Collection<String> getUsersWhoFlaggedGift(@Path(ID_PARAMETER) long id);
 }
