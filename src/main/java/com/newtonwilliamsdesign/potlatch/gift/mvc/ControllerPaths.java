@@ -1,4 +1,4 @@
-package com.newtonwilliamsdesign.potlatch.gift.repository;
+package com.newtonwilliamsdesign.potlatch.gift.mvc;
 
 /***********************************************************************************
  ***********************************************************************************
@@ -25,24 +25,30 @@ package com.newtonwilliamsdesign.potlatch.gift.repository;
  ***********************************************************************************
  ***********************************************************************************/
 
-import java.util.Collection;
+public interface ControllerPaths {
 
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.query.Param;
-import org.springframework.stereotype.Repository;
+	public static final String TITLE_PARAMETER = "title";
 
-import com.newtonwilliamsdesign.potlatch.gift.domain.Gift;
-import com.newtonwilliamsdesign.potlatch.gift.mvc.ControllerPaths;
-
-@Repository
-public interface GiftRepository extends CrudRepository<Gift, Long>{
+	public static final String TOKEN_PATH = "/oauth/token";
 	
-	public Collection<Gift> findByTitleContaining(@Param(ControllerPaths.TITLE_PARAMETER) String title);
-	public Collection<Gift> findByTitleContainingAndFlags(String title, long flags);
-	public Collection <Gift> findByParentid(long parentid);
-	public Collection <Gift> findByParentidAndFlags(long parentid, long flags);
-	public Collection <Gift>findByParentidOrderByModifiedonDesc(long parentid);
-	public Collection <Gift>findByParentidOrderByCreatedonAsc(long parentid);
-	public Collection <Gift>findByParentidAndFlagsOrderByModifiedonDesc(long parentid, long flags);
-		
+	public static final String DATA_PARAMETER = "image";
+
+	public static final String ID_PARAMETER = "id";
+
+	// The path where we expect the UserSvc to live
+	public static final String USER_SVC_PATH = "/user";
+	
+	// The path where we expect the VideoSvc to live
+	public static final String GIFT_SVC_PATH = "/gift";
+	
+	public static final String COUNT_SVC_PATH = "/count";
+	
+	// The path for the Gift (image) data
+	public static final String GIFT_IMG_PATH = GIFT_SVC_PATH + "/{id}/image";
+	
+	// The path for the Gift (image) thumbnail data
+	public static final String GIFT_THUMB_PATH = GIFT_SVC_PATH + "/{id}/thumb";
+
+	// The path to search videos by title
+	public static final String GIFT_TITLE_SEARCH_PATH = GIFT_SVC_PATH + "/search/findByTitle";
 }

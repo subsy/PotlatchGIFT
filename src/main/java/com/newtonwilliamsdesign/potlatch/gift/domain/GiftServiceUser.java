@@ -41,8 +41,6 @@ import lombok.Data;
 
 @Entity
 public @Data class GiftServiceUser {
-	
-	private static final long serialVersionUID = 1695573475642429512L;
 
 	@Id
 	private String username;

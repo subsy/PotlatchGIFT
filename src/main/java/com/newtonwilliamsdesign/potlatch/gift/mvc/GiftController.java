@@ -41,11 +41,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.google.common.collect.Lists;
-import com.newtonwilliamsdesign.potlatch.gift.GiftFileManager;
-import com.newtonwilliamsdesign.potlatch.gift.client.GiftSvcApi;
 import com.newtonwilliamsdesign.potlatch.gift.domain.Gift;
 import com.newtonwilliamsdesign.potlatch.gift.domain.GiftServiceUser;
 import com.newtonwilliamsdesign.potlatch.gift.domain.GiftUserPreferences;
@@ -62,16 +58,9 @@ public class GiftController {
 	private GiftServiceUserRepository usrs;
 	
 	@Autowired
-	private GiftFileManager giftDataMgr;
-	
-	@Autowired
 	ServletContext ctx;
-	
-	public void saveGift(Gift g, MultipartFile giftData) throws IOException {
-		giftDataMgr.saveGiftData(g, giftData.getInputStream());
-	}
 
-	@RequestMapping(value = GiftSvcApi.GIFT_SVC_PATH, method = RequestMethod.POST)
+	@RequestMapping(value = ControllerPaths.GIFT_SVC_PATH, method = RequestMethod.POST)
 	public Gift addGift(@RequestBody Gift g, Principal p) {
 		Gift savedGift = gifts.save(g);
 		if (g.getParentid() != 0)
@@ -85,13 +74,13 @@ public class GiftController {
 		return gifts.save(savedGift);
 	}
 	
-	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH, method=RequestMethod.GET)
+	@RequestMapping(value=ControllerPaths.GIFT_SVC_PATH, method=RequestMethod.GET)
 	public Collection<Gift> getGiftList(){
 		return Lists.newArrayList(gifts.findAll());
 	}
 	
 	// Gift Chain List is a list of Gifts where parentId = 0
-	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/chain", method=RequestMethod.GET)
+	@RequestMapping(value=ControllerPaths.GIFT_SVC_PATH + "/chain", method=RequestMethod.GET)
 	public Collection<Gift> getGiftChainList(Principal p,
 											HttpServletResponse response) throws IOException {
 		if (null == usrs.findByUsername(p.getName())) {
@@ -103,7 +92,7 @@ public class GiftController {
 		} else return Lists.newArrayList(gifts.findByParentidAndFlagsOrderByModifiedonDesc(0, 0));
 	}
 	
-	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/chain" + "/{id}", method=RequestMethod.GET)
+	@RequestMapping(value=ControllerPaths.GIFT_SVC_PATH + "/chain" + "/{id}", method=RequestMethod.GET)
 	public Collection<Gift> getGiftChainChildren(@PathVariable long id, Principal p,
 										HttpServletResponse response) throws IOException {
 		if (null == gifts.findOne(id)) {
@@ -120,13 +109,13 @@ public class GiftController {
 	}
 	
 	// Get List of Top Ten Gift Givers
-	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/top", method=RequestMethod.GET)
+	@RequestMapping(value=ControllerPaths.GIFT_SVC_PATH + "/top", method=RequestMethod.GET)
 	public ArrayList<GiftServiceUser> getTopTenGiftGiversList(){
 		return Lists.newArrayList(usrs.findTop10ByTouchedcountGreaterThanOrderByTouchedcountDesc(0));
 		
 	}
 	
-	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}", method=RequestMethod.GET)
+	@RequestMapping(value=ControllerPaths.GIFT_SVC_PATH + "/{id}", method=RequestMethod.GET)
 	public Gift getGiftById(@PathVariable long id,
 											HttpServletResponse response) throws IOException {
 		if (null == gifts.findOne(id)) {
@@ -135,7 +124,7 @@ public class GiftController {
 		return gifts.findOne(id);
 	}
 	
-	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}", method=RequestMethod.DELETE)
+	@RequestMapping(value=ControllerPaths.GIFT_SVC_PATH + "/{id}", method=RequestMethod.DELETE)
 	public Boolean deleteGiftById(@PathVariable long id,
 											Principal p,
 											HttpServletResponse response) throws IOException {
@@ -164,31 +153,7 @@ public class GiftController {
 		}
 	}
 	
-	@RequestMapping(value=GiftSvcApi.GIFT_IMG_PATH, method=RequestMethod.GET)
-	public String getImageUrl(@PathVariable long id,
-											HttpServletResponse response) throws IOException {
-		if (null == gifts.findOne(id)) {
-			response.sendError(HttpServletResponse.SC_NOT_FOUND);
-		}
-		if (!(giftDataMgr.hasGiftData(gifts.findOne(id)))) {
-			response.sendError(HttpServletResponse.SC_NOT_FOUND);
-		}
-		return gifts.findOne(id).getImageurl();
-	}
-	
-	@RequestMapping(value=GiftSvcApi.GIFT_THUMB_PATH, method=RequestMethod.GET)
-	public String getThumbUrl(@PathVariable long id,
-											HttpServletResponse response) throws IOException {
-		if (null == gifts.findOne(id)) {
-			response.sendError(HttpServletResponse.SC_NOT_FOUND);
-		}
-		if (!(giftDataMgr.hasGiftData(gifts.findOne(id)))) {
-			response.sendError(HttpServletResponse.SC_NOT_FOUND);
-		}
-		return gifts.findOne(id).getThumburl();
-	}
-	
-	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/touch", method=RequestMethod.POST)
+	@RequestMapping(value=ControllerPaths.GIFT_SVC_PATH + "/{id}/touch", method=RequestMethod.POST)
 	public long touchGift(@PathVariable long id, 
 										Principal p, 
 										HttpServletResponse response) throws IOException {
@@ -221,7 +186,7 @@ public class GiftController {
 		return g.getTouches();
 	}
 	
-	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/untouch", method=RequestMethod.POST)
+	@RequestMapping(value=ControllerPaths.GIFT_SVC_PATH + "/{id}/untouch", method=RequestMethod.POST)
 	public long untouchGift(@PathVariable long id, 
 										  Principal p, 
 										  HttpServletResponse response) throws IOException {
@@ -255,7 +220,7 @@ public class GiftController {
 			
 	}
 	
-	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/touched", method=RequestMethod.GET)
+	@RequestMapping(value=ControllerPaths.GIFT_SVC_PATH + "/{id}/touched", method=RequestMethod.GET)
 	public Collection<String> getUsersTouchedByGift(@PathVariable long id,
 																  HttpServletResponse response) throws IOException {
 		if (null == gifts.findOne(id)) {
@@ -265,7 +230,7 @@ public class GiftController {
 		return g.getTouchesUsernames();
 	}
 	
-	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/flag", method=RequestMethod.POST)
+	@RequestMapping(value=ControllerPaths.GIFT_SVC_PATH + "/{id}/flag", method=RequestMethod.POST)
 	public long flagGift(@PathVariable long id, 
 										Principal p, 
 										HttpServletResponse response) throws IOException {
@@ -293,7 +258,7 @@ public class GiftController {
 		return g.getFlags();
 	}
 	
-	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/unflag", method=RequestMethod.POST)
+	@RequestMapping(value=ControllerPaths.GIFT_SVC_PATH + "/{id}/unflag", method=RequestMethod.POST)
 	public long unflagGift(@PathVariable long id, 
 										  Principal p, 
 										  HttpServletResponse response) throws IOException {
@@ -321,7 +286,7 @@ public class GiftController {
 		return g.getFlags();	
 	}
 	
-	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/flaggedBy", method=RequestMethod.GET)
+	@RequestMapping(value=ControllerPaths.GIFT_SVC_PATH + "/{id}/flaggedBy", method=RequestMethod.GET)
 	public Collection<String> getUsersWhoFlaggedGift(@PathVariable long id,
 																  HttpServletResponse response) throws IOException {
 		if (null == gifts.findOne(id)) {
@@ -332,8 +297,8 @@ public class GiftController {
 	}
 	
 	
-	@RequestMapping(value=GiftSvcApi.GIFT_TITLE_SEARCH_PATH, method=RequestMethod.GET)
-	public Collection<Gift> findByTitle(@RequestParam(GiftSvcApi.TITLE_PARAMETER) String title,
+	@RequestMapping(value=ControllerPaths.GIFT_TITLE_SEARCH_PATH, method=RequestMethod.GET)
+	public Collection<Gift> findByTitle(@RequestParam(ControllerPaths.TITLE_PARAMETER) String title,
 										Principal p,
 										HttpServletResponse response) throws IOException {
 		if (null == usrs.findByUsername(p.getName())) {

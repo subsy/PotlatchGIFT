@@ -26,14 +26,10 @@ package com.newtonwilliamsdesign.potlatch.gift;
  ***********************************************************************************/
 
 import java.io.File;
-import java.io.IOException;
-
 import javax.servlet.MultipartConfigElement;
 
 import org.apache.catalina.connector.Connector;
 import org.apache.coyote.http11.Http11NioProtocol;
-
-import com.newtonwilliamsdesign.potlatch.gift.GiftFileManager;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -107,10 +103,6 @@ public class Application {
 			return factory.createMultipartConfig();
 		}
 		
-		@Bean
-		public GiftFileManager giftFileManager() throws IOException {
-		    return GiftFileManager.get();
-		}
 		
 		// Tell Spring to launch our app!
 		public static void main(String[] args) {
