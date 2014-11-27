@@ -1,4 +1,4 @@
-package com.newtonwilliamsdesign.potlatch.gift.domain;
+package com.newtonwilliamsdesign.potlatch.gift.repository;
 
 /***********************************************************************************
  ***********************************************************************************
@@ -25,51 +25,18 @@ package com.newtonwilliamsdesign.potlatch.gift.domain;
  ***********************************************************************************
  ***********************************************************************************/
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
+import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.stereotype.Repository;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.newtonwilliamsdesign.potlatch.gift.domain.GiftServiceUser;
 
-import lombok.Data;
-
-@Entity
-public @Data class GiftServiceUser {
+@Repository
+public interface GiftServiceUserRepository extends PagingAndSortingRepository<GiftServiceUser, Long>{
 	
-	private static final long serialVersionUID = 1695573475642429512L;
-
-	@Id
-	private String username;
-	
-	private String password;
-	private String name;
-	private int touchedcount;
-	
-	@OneToOne
-	@JoinColumn
-	@JsonManagedReference
-	private GiftUserPreferences userprefs;
-	
-	@OneToMany(mappedBy = "createdby", cascade=CascadeType.ALL)
-	@JsonManagedReference
-	private Set<Gift> createdGifts = new HashSet<Gift>();
-
-	public GiftServiceUser() {
-		this.username = "";
-		this.password = "";
-		this.userprefs = new GiftUserPreferences();
-	}
-	
-	public GiftServiceUser(String username, String password) {
-		this.username = username;
-		this.password = password;
-		this.userprefs = new GiftUserPreferences();
-	}
-
+	public GiftServiceUser findByName(String name);
+	public GiftServiceUser findByUsername(String username);
+	public GiftServiceUser findByUsernameOrderByTouchedcountDesc(String username);
+	public ArrayList<GiftServiceUser> findTop10ByTouchedcountGreaterThanOrderByTouchedcountDesc(int touchedcount);
 }

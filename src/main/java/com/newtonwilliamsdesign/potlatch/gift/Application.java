@@ -1,5 +1,30 @@
 package com.newtonwilliamsdesign.potlatch.gift;
 
+/***********************************************************************************
+ ***********************************************************************************
+ ***********************************************************************************
+        G I F T
+        A Multi-user Web Application and Android Client Application
+        for sharing of image gifts.
+
+        Copyright (C) 2014 Newton Williams Design.
+
+        This program is free software: you can redistribute it and/or modify
+        it under the terms of the GNU Affero General Public License as
+        published by the Free Software Foundation, either version 3 of the
+        License, or (at your option) any later version.
+
+        This program is distributed in the hope that it will be useful,
+        but WITHOUT ANY WARRANTY; without even the implied warranty of
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+        GNU Affero General Public License for more details.
+
+        You should have received a copy of the GNU Affero General Public License
+        along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ ***********************************************************************************
+ ***********************************************************************************
+ ***********************************************************************************/
+
 import java.io.File;
 import java.io.IOException;
 
@@ -7,14 +32,13 @@ import javax.servlet.MultipartConfigElement;
 
 import org.apache.catalina.connector.Connector;
 import org.apache.coyote.http11.Http11NioProtocol;
+
 import com.newtonwilliamsdesign.potlatch.gift.GiftFileManager;
-import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.context.embedded.ConfigurableEmbeddedServletContainer;
-import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomizer;
+import org.springframework.boot.context.embedded.EmbeddedServletContainerFactory;
 import org.springframework.boot.context.embedded.MultipartConfigFactory;
-import org.springframework.boot.context.embedded.tomcat.TomcatConnectorCustomizer;
 import org.springframework.boot.context.embedded.tomcat.TomcatEmbeddedServletContainerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -23,95 +47,51 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
-import com.newtonwilliamsdesign.potlatch.gift.config.MethodSecurityConfig;
 import com.newtonwilliamsdesign.potlatch.gift.config.OAuth2ServerConfig;
 import com.newtonwilliamsdesign.potlatch.gift.config.SecurityConfiguration;
 import com.newtonwilliamsdesign.potlatch.gift.repository.GiftRepository;
-import com.newtonwilliamsdesign.potlatch.gift.repository.UserRepository;
+import com.newtonwilliamsdesign.potlatch.gift.repository.GiftServiceUserRepository;
+import com.newtonwilliamsdesign.potlatch.gift.repository.GiftUserPrefsRepository;
 
-//Tell Spring to automatically inject any dependencies that are marked in
-//our classes with @Autowired
 @EnableAutoConfiguration
-//Tell Spring to automatically create a JPA implementation of our
-//GiftRepository
-@EnableJpaRepositories(basePackageClasses = {GiftRepository.class, UserRepository.class} )
-//Tell Spring to turn on WebMVC (e.g., it should enable the DispatcherServlet
-//so that requests can be routed to our Controllers)
+@EnableJpaRepositories(basePackageClasses = {GiftRepository.class, GiftServiceUserRepository.class, GiftUserPrefsRepository.class} )
 @EnableWebMvc
-// Tell Spring that this object represents a Configuration for the
-// application
 @Configuration
-// Tell Spring to go and scan our controller package (and all sub packages) to
-// find any Controllers or other components that are part of our applciation.
-// Any class in this package that is annotated with @Controller is going to be
-// automatically discovered and connected to the DispatcherServlet.
-@ComponentScan(basePackages = "com.newtonwilliamsdesign.potlatch.gift.mvc")
-//We use the @Import annotation to include our OAuth2SecurityConfiguration
-//as part of this configuration so that we can have security and oauth
-//setup by Spring
-@Import({SecurityConfiguration.class, OAuth2ServerConfig.class})
+@ComponentScan(basePackages = {"com.newtonwilliamsdesign.potlatch.gift.mvc", 
+							   "com.newtonwilliamsdesign.potlatch.gift.oauth", 
+							   "com.newtonwilliamsdesign.potlatch.gift.repository"} )
+@Import({SecurityConfiguration.class, OAuth2ServerConfig.class, })
 public class Application {
 	
 	private static final String MAX_REQUEST_SIZE = "4MB";
+
+	@Bean
+	public EmbeddedServletContainerFactory servletContainer() {
+	    TomcatEmbeddedServletContainerFactory tomcat = new TomcatEmbeddedServletContainerFactory();
+	    tomcat.addAdditionalTomcatConnectors(createSslConnector());
+	    return tomcat;
+	}
 	
-	 // This version uses the Tomcat web container and configures it to
-		// support HTTPS. The code below performs the configuration of Tomcat
-		// for HTTPS. Each web container has a different API for configuring
-		// HTTPS. 
-		//
-		// The app now requires that you pass the location of the keystore and
-		// the password for your private key that you would like to setup HTTPS
-		// with. In Eclipse, you can set these options by going to:
-		//    1. Run->Run Configurations
-		//    2. Under Java Applications, select your run configuration for this app
-		//    3. Open the Arguments tab
-		//    4. In VM Arguments, provide the following information to use the
-		//       default keystore provided with the sample code:
-		//
-		//       -Dkeystore.file=src/main/resources/private/keystore -Dkeystore.pass=changeit
-		//
-		//    5. Note, this keystore is highly insecure! If you want more securtiy, you 
-		//       should obtain a real SSL certificate:
-		//
-		//       http://tomcat.apache.org/tomcat-7.0-doc/ssl-howto.html
-		//
-	
-    @Bean
-    EmbeddedServletContainerCustomizer containerCustomizer(
-            @Value("${keystore.file:src/main/resources/private/keystore}") String keystoreFile,
-            @Value("${keystore.pass:changeit}") final String keystorePass) throws Exception {
+	final String absoluteKeystoreFile = new File("src/main/resources/private/server.jks").getAbsolutePath();
 
-		// If you were going to reuse this class in another
-		// application, this is one of the key sections that you
-		// would want to change
-    	
-        final String absoluteKeystoreFile = new File(keystoreFile).getAbsolutePath();
+	private Connector createSslConnector() {
+	    Connector connector = new Connector("org.apache.coyote.http11.Http11NioProtocol");
+	    Http11NioProtocol protocol = (Http11NioProtocol) connector.getProtocolHandler();
 
-        return new EmbeddedServletContainerCustomizer () {
+	        connector.setScheme("https");
+	        connector.setSecure(true);
+	        connector.setPort(8443);
+	        protocol.setSSLEnabled(true);
+	        protocol.setKeystoreFile(absoluteKeystoreFile);
+	        protocol.setKeystorePass("password");
+	        protocol.setTruststoreFile(absoluteKeystoreFile);
+	        protocol.setTruststorePass("password");
+	        protocol.setKeystoreType("JKS");
+	        protocol.setKeyAlias("servercert");
+	        return connector;
 
-			@Override
-			public void customize(ConfigurableEmbeddedServletContainer container) {
-		            TomcatEmbeddedServletContainerFactory tomcat = (TomcatEmbeddedServletContainerFactory) container;
-		            tomcat.addConnectorCustomizers(
-		                    new TomcatConnectorCustomizer() {
-								@Override
-								public void customize(Connector connector) {
-									connector.setPort(8443);
-			                        connector.setSecure(true);
-			                        connector.setScheme("https");
+	}
 
-			                        Http11NioProtocol proto = (Http11NioProtocol) connector.getProtocolHandler();
-			                        proto.setSSLEnabled(true);
-			                        proto.setKeystoreFile(absoluteKeystoreFile);
-			                        proto.setKeystorePass(keystorePass);
-			                        proto.setKeystoreType("JKS");
-			                        proto.setKeyAlias("tomcat");
-								}
-		                    });
-		    
-			}
-        };
-    }
 	
 	// This configuration element adds the ability to accept multipart
 		// requests to the web container.
@@ -123,7 +103,6 @@ public class Application {
 			// clients don't abuse the web container by sending huge requests
 			factory.setMaxFileSize(MAX_REQUEST_SIZE);
 			factory.setMaxRequestSize(MAX_REQUEST_SIZE);
-
 			// Return the configuration to setup multipart in the container
 			return factory.createMultipartConfig();
 		}

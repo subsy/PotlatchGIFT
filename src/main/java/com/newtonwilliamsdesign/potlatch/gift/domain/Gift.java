@@ -1,8 +1,34 @@
 package com.newtonwilliamsdesign.potlatch.gift.domain;
 
+/***********************************************************************************
+ ***********************************************************************************
+ ***********************************************************************************
+        G I F T
+        A Multi-user Web Application and Android Client Application
+        for sharing of image gifts.
+
+        Copyright (C) 2014 Newton Williams Design.
+
+        This program is free software: you can redistribute it and/or modify
+        it under the terms of the GNU Affero General Public License as
+        published by the Free Software Foundation, either version 3 of the
+        License, or (at your option) any later version.
+
+        This program is distributed in the hope that it will be useful,
+        but WITHOUT ANY WARRANTY; without even the implied warranty of
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+        GNU Affero General Public License for more details.
+
+        You should have received a copy of the GNU Affero General Public License
+        along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ ***********************************************************************************
+ ***********************************************************************************
+ ***********************************************************************************/
+
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.google.common.base.Objects;
 
 import javax.persistence.ElementCollection;
@@ -18,7 +44,7 @@ import lombok.Data;
 /**
  * A simple object to represent a GIFT and its URL for viewing.
  */
-@Entity(name = "GIFT")
+@Entity
 public @Data class Gift {
 
 	@Id
@@ -26,20 +52,20 @@ public @Data class Gift {
 	private long id;
 	
 	private long parentid;
-	
-	@ManyToOne
-	@JoinColumn(name="USER_ID")
-	private GiftServiceUser createdby;
-	
+
 	private String title;
 	private String description;
-	private String url;
 	private String imageurl;
 	private String thumburl;
 	private long flags;
 	private long touches;
 	private long createdon;
 	private long modifiedon;
+	
+	@ManyToOne
+	@JoinColumn
+	@JsonBackReference
+	private GiftServiceUser createdby;
 	
 	@ElementCollection
 	private Set<String> touchesUsernames = new HashSet<String>(); 
@@ -52,7 +78,6 @@ public @Data class Gift {
 		this.parentid = 0;
 		this.title = "Title";
 		this.description = "Description";
-		this.url = "";
 		this.imageurl = "";
 		this.thumburl = "";
 		this.flags = 0;
@@ -61,19 +86,17 @@ public @Data class Gift {
 		this.modifiedon = currTime;;
 	}
 
-	public Gift(long parentid, String title, String description, String url, String imageurl, String thumburl, long flags, long touches, long created, long modified, GiftServiceUser createdby) {
+	public Gift(long parentid, String title, String description, String imageurl, String thumburl, long flags, long touches, long created, long modified) {
 		super();
 		this.parentid = parentid;
 		this.title = title;
 		this.description = description;
-		this.url = url;
 		this.imageurl = imageurl;
 		this.thumburl = thumburl;
 		this.flags = flags;
 		this.touches = touches;
 		this.createdon = created;
 		this.modifiedon = modified;
-		this.createdby = createdby;
 	}
 	
 	/**
@@ -83,7 +106,7 @@ public @Data class Gift {
 	@Override
 	public int hashCode() {
 		// Google Guava provides great utilities for hashing
-		return Objects.hashCode(title, url);
+		return Objects.hashCode(title, imageurl);
 	}
 
 	/**
@@ -96,7 +119,7 @@ public @Data class Gift {
 			Gift other = (Gift) obj;
 			// Google Guava provides great utilities for equals too!
 			return Objects.equal(title, other.title)
-					&& Objects.equal(url, other.url);
+					&& Objects.equal(imageurl, other.imageurl);
 		} else {
 			return false;
 		}

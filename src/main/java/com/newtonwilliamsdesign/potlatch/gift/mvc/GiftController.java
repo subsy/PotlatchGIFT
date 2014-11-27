@@ -1,21 +1,29 @@
-/*
- * 
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- * 
- *     http://www.apache.org/licenses/LICENSE-2.0
- * 
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * 
- */
-
 package com.newtonwilliamsdesign.potlatch.gift.mvc;
+
+/***********************************************************************************
+ ***********************************************************************************
+ ***********************************************************************************
+        G I F T
+        A Multi-user Web Application and Android Client Application
+        for sharing of image gifts.
+
+        Copyright (C) 2014 Newton Williams Design.
+
+        This program is free software: you can redistribute it and/or modify
+        it under the terms of the GNU Affero General Public License as
+        published by the Free Software Foundation, either version 3 of the
+        License, or (at your option) any later version.
+
+        This program is distributed in the hope that it will be useful,
+        but WITHOUT ANY WARRANTY; without even the implied warranty of
+        MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+        GNU Affero General Public License for more details.
+
+        You should have received a copy of the GNU Affero General Public License
+        along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ ***********************************************************************************
+ ***********************************************************************************
+ ***********************************************************************************/
 
 import java.io.IOException;
 import java.security.Principal;
@@ -23,7 +31,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +41,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.google.common.collect.Lists;
@@ -42,95 +48,43 @@ import com.newtonwilliamsdesign.potlatch.gift.GiftFileManager;
 import com.newtonwilliamsdesign.potlatch.gift.client.GiftSvcApi;
 import com.newtonwilliamsdesign.potlatch.gift.domain.Gift;
 import com.newtonwilliamsdesign.potlatch.gift.domain.GiftServiceUser;
-import com.newtonwilliamsdesign.potlatch.gift.domain.GiftStatus;
-import com.newtonwilliamsdesign.potlatch.gift.domain.GiftStatus.GiftState;
+import com.newtonwilliamsdesign.potlatch.gift.domain.GiftUserPreferences;
 import com.newtonwilliamsdesign.potlatch.gift.repository.GiftRepository;
-import com.newtonwilliamsdesign.potlatch.gift.repository.UserRepository;
+import com.newtonwilliamsdesign.potlatch.gift.repository.GiftServiceUserRepository;
 
 @RestController
 public class GiftController {
 	
-	// The GiftRepository that we are going to store our Gifts
-	// in. We don't explicitly construct a GiftRepository, but
-	// instead mark this object as a dependency that needs to be
-	// injected by Spring. Our Application class has a method
-	// annotated with @Bean that determines what object will end
-	// up being injected into this member variable.
-	//
-	// Also notice that we don't even need a setter for Spring to
-	// do the injection.
-	//
 	@Autowired
 	private GiftRepository gifts;
 	
 	@Autowired
-	private UserRepository usrs;
+	private GiftServiceUserRepository usrs;
 	
 	@Autowired
 	private GiftFileManager giftDataMgr;
-
-	private String getImageUrl(long giftId) {
-		String url = getUrlBaseForLocalServer() + "/gift/" + giftId + "/image";
-		return url;
-	}
 	
-	private String getThumbUrl(long giftId) {
-		String url = getUrlBaseForLocalServer() + "/gift/" + giftId + "/image";
-		return url;
-	}
-
-	private String getUrlBaseForLocalServer() {
-		HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-		String base = "https://" + request.getServerName() + ((request.getServerPort() != 80) ? ":" + request.getServerPort() : "");
-		return base;
-	}
-
+	@Autowired
+	ServletContext ctx;
+	
 	public void saveGift(Gift g, MultipartFile giftData) throws IOException {
 		giftDataMgr.saveGiftData(g, giftData.getInputStream());
 	}
 
-	// Receives POST requests to /gift and converts the HTTP
-	// request body, which should contain json, into a Gift
-	// object before adding it to the list. The @RequestBody
-	// annotation on the Gift parameter is what tells Spring
-	// to interpret the HTTP request body as JSON and convert
-	// it into a Gift object to pass into the method. The
-	// @ResponseBody annotation tells Spring to convert the
-	// return value from the method back into JSON and put
-	// it into the body of the HTTP response to the client.
-	//
-	// The GIFT_SVC_PATH is set to "/gift" in the GiftSvcApi
-	// interface. We use this constant to ensure that the 
-	// client and service paths for the GiftSvc are always
-	// in synch.
-	//
-
 	@RequestMapping(value = GiftSvcApi.GIFT_SVC_PATH, method = RequestMethod.POST)
-	public Gift addGift(@RequestBody Gift g) {
+	public Gift addGift(@RequestBody Gift g, Principal p) {
 		Gift savedGift = gifts.save(g);
-		savedGift.setImageurl(getImageUrl(savedGift.getId()));
-		savedGift.setThumburl(getThumbUrl(savedGift.getId()));
+		if (g.getParentid() != 0)
+		{
+			Gift parentGift = gifts.findOne(g.getParentid());
+			parentGift.setModifiedon(g.getModifiedon());
+			gifts.save(parentGift);
+		}
+		GiftServiceUser gUser = usrs.findByUsername(p.getName());
+		savedGift.setCreatedby(gUser);
 		return gifts.save(savedGift);
 	}
 	
-	@RequestMapping(value = GiftSvcApi.GIFT_IMG_PATH, method = RequestMethod.POST)
-	public GiftStatus setGiftData(
-			@PathVariable(GiftSvcApi.ID_PARAMETER) long id,
-			@RequestParam(GiftSvcApi.DATA_PARAMETER) MultipartFile giftData,
-			HttpServletResponse response) throws IOException {
-		// if id != null save the gift data
-		if (null == gifts.findOne(id)) {
-			response.sendError(HttpServletResponse.SC_NOT_FOUND);
-		} else {
-			saveGift(gifts.findOne(id), giftData);
-		}
-		return new GiftStatus(GiftState.READY);
-	}
-	
-	// Receives GET requests to /video and returns the current
-	// list of videos in memory. Spring automatically converts
-	// the list of videos to JSON because of the @ResponseBody
-	// annotation.
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH, method=RequestMethod.GET)
 	public Collection<Gift> getGiftList(){
 		return Lists.newArrayList(gifts.findAll());
@@ -138,15 +92,38 @@ public class GiftController {
 	
 	// Gift Chain List is a list of Gifts where parentId = 0
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/chain", method=RequestMethod.GET)
-	public Collection<Gift> getGiftChainList(){
-		return Lists.newArrayList(gifts.findAll());
+	public Collection<Gift> getGiftChainList(Principal p,
+											HttpServletResponse response) throws IOException {
+		if (null == usrs.findByUsername(p.getName())) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+		}
+		GiftUserPreferences prefs = usrs.findByUsername(p.getName()).getUserprefs();
+		if(prefs.isDisplayFlagged()) {
+			return Lists.newArrayList(gifts.findByParentidOrderByModifiedonDesc(0));
+		} else return Lists.newArrayList(gifts.findByParentidAndFlagsOrderByModifiedonDesc(0, 0));
+	}
+	
+	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/chain" + "/{id}", method=RequestMethod.GET)
+	public Collection<Gift> getGiftChainChildren(@PathVariable long id, Principal p,
+										HttpServletResponse response) throws IOException {
+		if (null == gifts.findOne(id)) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+		}
+		if (null == usrs.findByUsername(p.getName())) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+		}
+		GiftUserPreferences prefs = usrs.findByUsername(p.getName()).getUserprefs();
+		if(prefs.isDisplayFlagged()) {
+			return Lists.newArrayList(gifts.findByParentidOrderByCreatedonAsc(id));
+		}
+		else return Lists.newArrayList(gifts.findByParentidAndFlags(id, 0));
 	}
 	
 	// Get List of Top Ten Gift Givers
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/top", method=RequestMethod.GET)
 	public ArrayList<GiftServiceUser> getTopTenGiftGiversList(){
-		//return Lists.newArrayList(usrs.findTop10ByTouchedcount());
-		return new ArrayList<GiftServiceUser>();
+		return Lists.newArrayList(usrs.findTop10ByTouchedcountGreaterThanOrderByTouchedcountDesc(0));
+		
 	}
 	
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}", method=RequestMethod.GET)
@@ -158,8 +135,61 @@ public class GiftController {
 		return gifts.findOne(id);
 	}
 	
+	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}", method=RequestMethod.DELETE)
+	public Boolean deleteGiftById(@PathVariable long id,
+											Principal p,
+											HttpServletResponse response) throws IOException {
+		if (null == gifts.findOne(id)) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+		}
+		if (null == usrs.findByUsername(p.getName())) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+		}
+
+		Gift g = gifts.findOne(id);
+		GiftServiceUser u = usrs.findByUsername(p.getName());
+		if (g.getCreatedby().equals(u)) {
+			if (gifts.findByParentid(id).isEmpty()) { // only allow gift to be deleted if it has no children
+				long touches = g.getTouches();
+				u.setTouchedcount((int) (u.getTouchedcount() - touches));
+				gifts.delete(g);
+				response.setStatus(HttpServletResponse.SC_OK);
+				return true;
+			}
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+			return false;
+		} else {
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+			return false;
+		}
+	}
+	
+	@RequestMapping(value=GiftSvcApi.GIFT_IMG_PATH, method=RequestMethod.GET)
+	public String getImageUrl(@PathVariable long id,
+											HttpServletResponse response) throws IOException {
+		if (null == gifts.findOne(id)) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+		}
+		if (!(giftDataMgr.hasGiftData(gifts.findOne(id)))) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+		}
+		return gifts.findOne(id).getImageurl();
+	}
+	
+	@RequestMapping(value=GiftSvcApi.GIFT_THUMB_PATH, method=RequestMethod.GET)
+	public String getThumbUrl(@PathVariable long id,
+											HttpServletResponse response) throws IOException {
+		if (null == gifts.findOne(id)) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+		}
+		if (!(giftDataMgr.hasGiftData(gifts.findOne(id)))) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+		}
+		return gifts.findOne(id).getThumburl();
+	}
+	
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/touch", method=RequestMethod.POST)
-	public Boolean touchVideo(@PathVariable long id, 
+	public long touchGift(@PathVariable long id, 
 										Principal p, 
 										HttpServletResponse response) throws IOException {
 		Gift g = gifts.findOne(id);
@@ -173,27 +203,26 @@ public class GiftController {
 			int giftownerTouchedCount;
 			
 			if (touched.contains(username)) {
-				// already liked, return 400
+				// already touched, return 400
 				response.sendError(HttpServletResponse.SC_BAD_REQUEST);
 			} else {
-				// perform like, return 200
+				// perform touch, return 200
 				Long touchedNum = g.getTouches();
 				touched.add(username);
 				g.setTouchesUsernames(touched);
 				g.setTouches(++touchedNum);
-				//gifts.save(g);
+				gifts.save(g);
 				giftownerTouchedCount = giftowner.getTouchedcount();
 				giftowner.setTouchedcount(++giftownerTouchedCount);
 				usrs.save(giftowner);
 				response.setStatus(HttpServletResponse.SC_OK);
-				return true;
 			}
 		}
-		return false;
+		return g.getTouches();
 	}
 	
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/untouch", method=RequestMethod.POST)
-	public Boolean untouchVideo(@PathVariable long id, 
+	public long untouchGift(@PathVariable long id, 
 										  Principal p, 
 										  HttpServletResponse response) throws IOException {
 		Gift g = gifts.findOne(id);
@@ -207,24 +236,22 @@ public class GiftController {
 			int giftownerTouchedCount;
 			
 			if (touched.contains(username)) {
-				// perform unlike, return 200
+				// perform untouch, return 200
 				Long touchedNum = g.getTouches();
 				touched.remove(username);
 				g.setTouchesUsernames(touched);
 				g.setTouches(--touchedNum);
-				//gifts.save(g);
+				gifts.save(g);
 				giftownerTouchedCount = giftowner.getTouchedcount();
 				giftowner.setTouchedcount(--giftownerTouchedCount);
 				usrs.save(giftowner);
 				response.setStatus(HttpServletResponse.SC_OK);
-				return true;
 			} else {
-				// user hasn't liked this video, return 400
-				
+				// user hasn't touched this Gift, return 400
 				response.sendError(HttpServletResponse.SC_BAD_REQUEST);
 			}
 		}
-		return false;
+		return g.getTouches();
 			
 	}
 	
@@ -239,7 +266,7 @@ public class GiftController {
 	}
 	
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/flag", method=RequestMethod.POST)
-	public Boolean flagVideo(@PathVariable long id, 
+	public long flagGift(@PathVariable long id, 
 										Principal p, 
 										HttpServletResponse response) throws IOException {
 		Gift g = gifts.findOne(id);
@@ -251,24 +278,23 @@ public class GiftController {
 			String username = p.getName();
 			
 			if (flagged.contains(username)) {
-				// already liked, return 400
+				// already flagged, return 400
 				response.sendError(HttpServletResponse.SC_BAD_REQUEST);
 			} else {
-				// perform like, return 200
+				// perform flag, return 200
 				Long flaggedNum = g.getFlags();
 				flagged.add(username);
 				g.setFlagsUsernames(flagged);
 				g.setFlags(++flaggedNum);
 				gifts.save(g);
 				response.setStatus(HttpServletResponse.SC_OK);
-				return true;
 			}
 		}
-		return false;
+		return g.getFlags();
 	}
 	
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/unflag", method=RequestMethod.POST)
-	public Boolean unflagVideo(@PathVariable long id, 
+	public long unflagGift(@PathVariable long id, 
 										  Principal p, 
 										  HttpServletResponse response) throws IOException {
 		Gift g = gifts.findOne(id);
@@ -280,22 +306,19 @@ public class GiftController {
 			String username = p.getName();
 			
 			if (flagged.contains(username)) {
-				// perform unlike, return 200
+				// perform unflag, return 200
 				Long flaggedNum = g.getFlags();
 				flagged.remove(username);
 				g.setFlagsUsernames(flagged);
 				g.setFlags(--flaggedNum);
 				gifts.save(g);
 				response.setStatus(HttpServletResponse.SC_OK);
-				return true;
 			} else {
-				// user hasn't liked this video, return 400
-				
+				// user hasn't flagged this gift, return 400
 				response.sendError(HttpServletResponse.SC_BAD_REQUEST);
 			}
 		}
-		return false;
-			
+		return g.getFlags();	
 	}
 	
 	@RequestMapping(value=GiftSvcApi.GIFT_SVC_PATH + "/{id}/flaggedBy", method=RequestMethod.GET)
@@ -308,16 +331,18 @@ public class GiftController {
 		return g.getFlagsUsernames();
 	}
 	
-	// Receives GET requests to /video/find and returns all Videos
-	// that have a title (e.g., Video.name) matching the "title" request
-	// parameter value that is passed by the client
+	
 	@RequestMapping(value=GiftSvcApi.GIFT_TITLE_SEARCH_PATH, method=RequestMethod.GET)
-	public Collection<Gift> findByTitle(
-			// Tell Spring to use the "title" parameter in the HTTP request's query
-			// string as the value for the title method parameter
-			@RequestParam(GiftSvcApi.TITLE_PARAMETER) String title
-	){
-		return gifts.findByTitle(title);
+	public Collection<Gift> findByTitle(@RequestParam(GiftSvcApi.TITLE_PARAMETER) String title,
+										Principal p,
+										HttpServletResponse response) throws IOException {
+		if (null == usrs.findByUsername(p.getName())) {
+			response.sendError(HttpServletResponse.SC_NOT_FOUND);
+		}
+		GiftUserPreferences prefs = usrs.findByUsername(p.getName()).getUserprefs();
+		if(prefs.isDisplayFlagged()) {
+			return Lists.newArrayList(gifts.findByTitleContaining(title));
+		} else return Lists.newArrayList(gifts.findByTitleContainingAndFlags(title, 0));
 	}
 	
 	
