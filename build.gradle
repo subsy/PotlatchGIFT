@@ -52,7 +52,7 @@ dependencies {
     compile("org.springframework.security.oauth:spring-security-oauth2:2.0.4.RELEASE")
     compile("org.springframework.security.oauth:spring-security-oauth2-javaconfig:1.0.0.M1")
     
-    compile("mysql:mysql-connector-java:5.1.32")  
+    compile("mysql:mysql-connector-java:8.0.13")  
     
     compile("com.google.guava:guava:17.0")
     compile("org.apache.commons:commons-lang3:3.3.2")
