@@ -55,7 +55,7 @@ dependencies {
     compile("mysql:mysql-connector-java:5.1.32")  
     
     compile("com.google.guava:guava:17.0")
-    compile("org.apache.commons:commons-lang3:3.3.2")
+    compile("org.apache.commons:commons-lang3:3.10")
     compile("org.apache.httpcomponents:httpclient:4.3.5")
     compile("com.squareup.retrofit:retrofit:1.7.1")
     compile("commons-io:commons-io:2.4")
